@@ -6,7 +6,7 @@
 /*   By: mlakhssa <mlakhssa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/01/31 14:56:43 by mlakhssa          #+#    #+#             */
-/*   Updated: 2022/01/31 16:03:17 by mlakhssa         ###   ########.fr       */
+/*   Updated: 2022/01/31 19:21:34 by mlakhssa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,9 +65,7 @@ int	part_1(char **argv, int fd[2])
 	arg = alloc(arg, argv[2]);
 	file = open(argv[1], O_RDONLY);
 	if (file == -1)
-	{
 		perror(argv[1]);
-	}
 	close(fd[0]);
 	dup2(file, 0);
 	dup2(fd[1], 1);
@@ -90,10 +88,7 @@ int	part_2(char **argv, int fd[2])
 	arg2 = NULL;
 	file = open(argv[4], O_CREAT | O_WRONLY, 0777);
 	if (file == -1)
-	{
 		perror(argv[4]);
-		return (-1);
-	}
 	close(fd[1]);
 	dup2(fd[0], 0);
 	dup2(file, 1);
@@ -112,7 +107,7 @@ int	part_2(char **argv, int fd[2])
 int	main(int argc, char *argv[])
 {
 	int		fd[2];
-	int		pid;
+	int		pid[2];
 
 	if (argc == 5)
 	{	
@@ -121,17 +116,31 @@ int	main(int argc, char *argv[])
 			perror("pipe");
 			return (-1);
 		}
-		pid = fork();
-		if (pid == 0)
+		pid[0] = fork();
+		if (pid[0] == 0)
 		{
 			if (part_1(argv, fd) == -1)
 				return (-1);
 			return (0);
 		}
-		wait(NULL);
-		if (part_2(argv, fd) == -1)
-			return (-1);
+		else
+		{
+			pid[1] = fork();
+			if (pid[1] == 0)
+			{
+				if (part_2(argv, fd) == -1)
+					return (-1);
+				return (0);
+			}
+			close(fd[0]);
+			close(fd[1]);
+		}
+		wait (NULL);
+		//waitpid (pid[1],0,0);
+		//waitpid (pid[0],0,0);
 		close(fd[0]);
 		close(fd[1]);
 	}
+	if (argc < 5 || argc > 5)
+		write(1, "Needs 5 param", 14);
 }
