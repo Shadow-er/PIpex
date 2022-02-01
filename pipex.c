@@ -6,7 +6,7 @@
 /*   By: mlakhssa <mlakhssa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/01/31 14:56:43 by mlakhssa          #+#    #+#             */
-/*   Updated: 2022/01/31 19:21:34 by mlakhssa         ###   ########.fr       */
+/*   Updated: 2022/02/01 15:43:58 by mlakhssa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ char	**alloc(char **arg, char *argv)
 	i = 0;
 	while (argv[i])
 		i++;
-	arg = (char **)malloc(sizeof(char *) * 4);
+	arg = (char **)malloc(sizeof(char *) * 3);
 	if (arg == 0)
 		return (0);
 	arg[0] = (char *)malloc(sizeof(char) * 5);
@@ -52,7 +52,6 @@ char	**alloc(char **arg, char *argv)
 	arg[0] = "bash";
 	arg[1] = "-c";
 	arg[2] = argv;
-	arg[3] = NULL;
 	return (arg);
 }
 
@@ -65,7 +64,10 @@ int	part_1(char **argv, int fd[2])
 	arg = alloc(arg, argv[2]);
 	file = open(argv[1], O_RDONLY);
 	if (file == -1)
+	{
 		perror(argv[1]);
+		return (-1);
+	}
 	close(fd[0]);
 	dup2(file, 0);
 	dup2(fd[1], 1);
@@ -77,7 +79,7 @@ int	part_1(char **argv, int fd[2])
 	free(arg);
 	close(file);
 	close(fd[1]);
-	return (0);
+	exit (0);
 }
 
 int	part_2(char **argv, int fd[2])
@@ -86,9 +88,12 @@ int	part_2(char **argv, int fd[2])
 	int		file;
 
 	arg2 = NULL;
-	file = open(argv[4], O_CREAT | O_WRONLY, 0777);
+	file = open(argv[4],O_WRONLY | O_CREAT | O_TRUNC, 644);
 	if (file == -1)
+	{
 		perror(argv[4]);
+		return (-1);
+	}
 	close(fd[1]);
 	dup2(fd[0], 0);
 	dup2(file, 1);
@@ -101,7 +106,7 @@ int	part_2(char **argv, int fd[2])
 	free(arg2);
 	close(fd[0]);
 	close(file);
-	return (0);
+	exit (0);
 }
 
 int	main(int argc, char *argv[])
@@ -109,38 +114,25 @@ int	main(int argc, char *argv[])
 	int		fd[2];
 	int		pid[2];
 
-	if (argc == 5)
-	{	
-		if (pipe(fd) == -1)
-		{
-			perror("pipe");
-			return (-1);
-		}
-		pid[0] = fork();
-		if (pid[0] == 0)
-		{
-			if (part_1(argv, fd) == -1)
-				return (-1);
-			return (0);
-		}
-		else
-		{
-			pid[1] = fork();
-			if (pid[1] == 0)
-			{
-				if (part_2(argv, fd) == -1)
-					return (-1);
-				return (0);
-			}
-			close(fd[0]);
-			close(fd[1]);
-		}
-		wait (NULL);
-		//waitpid (pid[1],0,0);
-		//waitpid (pid[0],0,0);
+	if (argc != 5)
+		return (0);
+	if (pipe(fd) == -1)
+	{
+		perror("pipe");
+		return (-1);
+	}
+	pid[0] = fork();
+	if (pid[0] == 0)
+		part_1(argv, fd);
+	else
+	{
+		pid[1] = fork();
+		if (pid[1] == 0)
+			part_2(argv, fd);
 		close(fd[0]);
 		close(fd[1]);
 	}
-	if (argc < 5 || argc > 5)
-		write(1, "Needs 5 param", 14);
+	wait (NULL);
+	close(fd[0]);
+	close(fd[1]);
 }
